@@ -24,16 +24,18 @@ async function connect() {
         console.log('Conectado a MongoDB');
     } catch (err) {
         console.error('Error conectando a MongoDB:', err);
-        process.exit(1);
     }
 }
 
 // Manejo de cierre de conexión
-process.on('SIGINT', async () => {
-    await client.close();
-    console.log('Conexión a MongoDB cerrada');
-    process.exit(0);
-});
+// Si quieres mantenerlo solo para desarrollo local:
+if (process.env.NODE_ENV !== 'production') {
+    process.on('SIGINT', async () => {
+        await client.close();
+        console.log('Conexión a MongoDB cerrada');
+        process.exit(0);
+    });
+}
 
 connect();
 
