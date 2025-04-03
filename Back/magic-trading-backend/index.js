@@ -447,15 +447,14 @@ app.get('/api/status', async (req, res) => {
     }
 });
 
-// Importante: en lugar de app.listen() para Vercel, exportamos la app
-// Para desarrollo local, puedes descomentar las siguientes líneas
-/*
+// Al final de tu archivo index.js, después de todas las rutas
+
+// Para desarrollo local
 if (process.env.NODE_ENV !== 'production') {
     app.listen(port, () => {
         console.log(`Servidor backend corriendo en http://localhost:${port}`);
     });
 }
-*/
 
-// Exportar para Vercel
+// Exportar la app para Vercel y otros entornos hr
 module.exports = app;
