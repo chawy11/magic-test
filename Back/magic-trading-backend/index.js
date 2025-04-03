@@ -16,18 +16,33 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Conexión a MongoDB optimizada para serverless
-const client = new MongoClient(MONGODB_URI);
+// Conexión a MongoDB optimizada para serverless
+const client = new MongoClient(MONGODB_URI, {
+    // Opciones de conexión para entornos serverless
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 5000,
+    maxPoolSize: 10
+});
 let dbConnection;
 
 async function getDbConnection() {
     if (!dbConnection) {
         try {
-            await client.connect();
+            // Usar promesa con timeout para evitar bloqueos
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Tiempo de conexión agotado')), 5000)
+            );
+            
+            const connectPromise = client.connect();
+            await Promise.race([connectPromise, timeoutPromise]);
+            
             console.log('Conectado a MongoDB');
             dbConnection = client.db('magic_trading');
         } catch (err) {
             console.error('Error conectando a MongoDB:', err);
-            // No usar process.exit() en entorno serverless
+            // No lanzar error, solo registrarlo
+            return null;
         }
     }
     return dbConnection;
@@ -416,25 +431,41 @@ app.get('/', (req, res) => {
 });
 
 // Ruta de diagnóstico
+// Ruta de diagnóstico - versión más robusta
 app.get('/api/status', async (req, res) => {
     try {
         let status = {
             server: 'OK',
-            mongodb: 'Desconectado',
+            mongodb: 'No probado',
             environment: process.env.NODE_ENV || 'development',
-            mongodbUri: process.env.MONGODB_URI ? 'Configurado (ocultado por seguridad)' : 'No configurado'
+            mongodbUri: process.env.MONGODB_URI ? 'Configurado (ocultado)' : 'No configurado'
         };
         
+        // Evitar timeout en Vercel
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Tiempo de espera agotado')), 5000)
+        );
+        
         try {
-            const db = await getDbConnection();
+            // Intenta conectar a MongoDB con timeout
+            const dbPromise = getDbConnection();
+            const db = await Promise.race([dbPromise, timeoutPromise]);
+            
             if (db) {
-                const collections = await db.listCollections().toArray();
                 status.mongodb = 'Conectado';
                 status.databaseName = db.databaseName;
-                status.collections = collections.map(col => col.name);
+                
+                // Lista colecciones con timeout
+                try {
+                    const collectionsPromise = db.listCollections().toArray();
+                    const collections = await Promise.race([collectionsPromise, timeoutPromise]);
+                    status.collections = collections.map(col => col.name);
+                } catch (collErr) {
+                    status.collectionsError = 'Error al listar colecciones: ' + collErr.message;
+                }
             }
         } catch (dbErr) {
-            status.mongodb = `Error: ${dbErr.message}`;
+            status.mongodb = 'Error: ' + dbErr.message;
         }
         
         res.json(status);
@@ -445,6 +476,19 @@ app.get('/api/status', async (req, res) => {
             error: err.message
         });
     }
+});
+
+// Ruta de diagnóstico básica que no depende de MongoDB
+app.get('/api/basic-status', (req, res) => {
+    res.json({
+        server: 'OK',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        envVars: {
+            mongodbUri: process.env.MONGODB_URI ? 'Configurado (ocultado)' : 'No configurado',
+            jwtSecret: process.env.JWT_SECRET ? 'Configurado (ocultado)' : 'No configurado'
+        }
+    });
 });
 
 // Al final de tu archivo index.js, después de todas las rutas
