@@ -1,15 +1,18 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "Back/magic-trading-backend/index.js",
-        "use": "@vercel/node"
-      }
-    ],
-    "routes": [
-      {
-        "src": "/(.*)",
-        "dest": "Back/magic-trading-backend/index.js"
-      }
-    ]
+  "version": 2,
+  "builds": [
+    {
+      "src": "Back/magic-trading-backend/vercel.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "Back/magic-trading-backend/vercel.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
   }
+}
