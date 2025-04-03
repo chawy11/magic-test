@@ -15,20 +15,28 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 app.use(cors());
 app.use(bodyParser.json());
 
-// Conexión a MongoDB
+// Conexión a MongoDB optimizada para serverless
 const client = new MongoClient(MONGODB_URI);
+let dbConnection;
 
-async function connect() {
-    try {
-        await client.connect();
-        console.log('Conectado a MongoDB');
-    } catch (err) {
-        console.error('Error conectando a MongoDB:', err);
+async function getDbConnection() {
+    if (!dbConnection) {
+        try {
+            await client.connect();
+            console.log('Conectado a MongoDB');
+            dbConnection = client.db('magic_trading');
+        } catch (err) {
+            console.error('Error conectando a MongoDB:', err);
+            // No usar process.exit() en entorno serverless
+        }
     }
+    return dbConnection;
 }
 
-// Manejo de cierre de conexión
-// Si quieres mantenerlo solo para desarrollo local:
+// Intentar conectar inicialmente, pero no bloquear
+getDbConnection().catch(console.error);
+
+// Manejo de cierre de conexión solo para desarrollo
 if (process.env.NODE_ENV !== 'production') {
     process.on('SIGINT', async () => {
         await client.close();
@@ -36,8 +44,6 @@ if (process.env.NODE_ENV !== 'production') {
         process.exit(0);
     });
 }
-
-connect();
 
 // Ruta para el registro
 app.post('/api/registro', async (req, res) => {
@@ -48,10 +54,14 @@ app.post('/api/registro', async (req, res) => {
         return res.status(400).json({ message: 'Todos los campos son obligatorios' });
     }
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         // Verificar ambas condiciones y recopilar errores
         const errores = [];
 
@@ -104,10 +114,14 @@ app.post('/api/login', async (req, res) => {
         return res.status(400).json({ message: 'Todos los campos son obligatorios' });
     }
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         // Buscar el usuario en la base de datos
         const usuarioEncontrado = await collection.findOne({ usuario });
         if (!usuarioEncontrado) {
@@ -163,10 +177,14 @@ function authenticateToken(req, res, next) {
 app.get('/api/user/:username', async (req, res) => {
     const { username } = req.params;
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         const user = await collection.findOne({ usuario: username }, { projection: { password: 0 } });
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -183,10 +201,14 @@ app.post('/api/user/wants', authenticateToken, async (req, res) => {
     const { cardId, cardName, quantity = 1, setCode = '', edition = '', language = 'English', foil = false, price = 0 } = req.body;
     const userId = req.user.id;
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         // Verificar si la carta ya existe en la lista
         const user = await collection.findOne(
             { _id: new ObjectId(userId), 'wants.cardId': cardId }
@@ -215,10 +237,14 @@ app.post('/api/user/sells', authenticateToken, async (req, res) => {
     const { cardId, cardName, quantity = 1, setCode = '', edition = '', language = 'English', foil = false, price = 0 } = req.body;
     const userId = req.user.id;
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         // Verificar si la carta ya existe en la lista
         const user = await collection.findOne(
             { _id: new ObjectId(userId), 'sells.cardId': cardId }
@@ -241,16 +267,19 @@ app.post('/api/user/sells', authenticateToken, async (req, res) => {
 });
 
 // Actualizar carta en wants
-// Actualizar carta en wants
 app.put('/api/user/wants/:cardId', authenticateToken, async (req, res) => {
     const { cardId } = req.params;
     const { quantity, edition, language, foil, price = 0, setCode = '' } = req.body;
     const userId = req.user.id;
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         await collection.updateOne(
             { _id: new ObjectId(userId), "wants.cardId": cardId },
             { $set: {
@@ -271,16 +300,19 @@ app.put('/api/user/wants/:cardId', authenticateToken, async (req, res) => {
 });
 
 // Actualizar carta en sells
-// Actualizar carta en sells
 app.put('/api/user/sells/:cardId', authenticateToken, async (req, res) => {
     const { cardId } = req.params;
     const { quantity, edition, language, foil, price, setCode = '' } = req.body;
     const userId = req.user.id;
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         await collection.updateOne(
             { _id: new ObjectId(userId), "sells.cardId": cardId },
             { $set: {
@@ -305,10 +337,14 @@ app.delete('/api/user/wants/:cardId', authenticateToken, async (req, res) => {
     const { cardId } = req.params;
     const userId = req.user.id;
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         await collection.updateOne(
             { _id: new ObjectId(userId) },
             { $pull: { wants: { cardId } } }
@@ -326,10 +362,14 @@ app.delete('/api/user/sells/:cardId', authenticateToken, async (req, res) => {
     const { cardId } = req.params;
     const userId = req.user.id;
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         await collection.updateOne(
             { _id: new ObjectId(userId) },
             { $pull: { sells: { cardId } } }
@@ -346,10 +386,14 @@ app.delete('/api/user/sells/:cardId', authenticateToken, async (req, res) => {
 app.get('/api/user/profile/me', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
-    const db = client.db('magic_trading');
-    const collection = db.collection('usuarios');
-
     try {
+        const db = await getDbConnection();
+        if (!db) {
+            return res.status(500).json({ message: 'Error al conectar con la base de datos' });
+        }
+        
+        const collection = db.collection('usuarios');
+
         const user = await collection.findOne(
             { _id: new ObjectId(userId) },
             { projection: { password: 0 } }
@@ -366,11 +410,52 @@ app.get('/api/user/profile/me', authenticateToken, async (req, res) => {
     }
 });
 
+// Ruta principal
 app.get('/', (req, res) => {
-    res.send('¡Bienvenido al backend de Magic Trading!');
+    res.json({ message: '¡Bienvenido al backend de Magic Trading!', status: 'OK' });
 });
 
-// Iniciar el servidor
-app.listen(port, () => {
-    console.log(`Servidor backend corriendo en http://localhost:${port}`);
+// Ruta de diagnóstico
+app.get('/api/status', async (req, res) => {
+    try {
+        let status = {
+            server: 'OK',
+            mongodb: 'Desconectado',
+            environment: process.env.NODE_ENV || 'development',
+            mongodbUri: process.env.MONGODB_URI ? 'Configurado (ocultado por seguridad)' : 'No configurado'
+        };
+        
+        try {
+            const db = await getDbConnection();
+            if (db) {
+                const collections = await db.listCollections().toArray();
+                status.mongodb = 'Conectado';
+                status.databaseName = db.databaseName;
+                status.collections = collections.map(col => col.name);
+            }
+        } catch (dbErr) {
+            status.mongodb = `Error: ${dbErr.message}`;
+        }
+        
+        res.json(status);
+    } catch (err) {
+        console.error('Error al verificar estado:', err);
+        res.status(500).json({ 
+            status: 'Error',
+            error: err.message
+        });
+    }
 });
+
+// Importante: en lugar de app.listen() para Vercel, exportamos la app
+// Para desarrollo local, puedes descomentar las siguientes líneas
+/*
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        console.log(`Servidor backend corriendo en http://localhost:${port}`);
+    });
+}
+*/
+
+// Exportar para Vercel
+module.exports = app;
