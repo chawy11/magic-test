@@ -1,0 +1,32 @@
+ion-card-title {
+  font-size: 14px; /* Tamaño más pequeño en móvil */
+  font-weight: bold;
+  text-align: center; /* Centra el texto */
+}
+
+.card {
+  position: relative;
+}
+
+.options-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  ion-icon {
+    font-size: 20px;
+    color: #333;
+  }
+}

@@ -1,0 +1,25 @@
+/* Archivo home.page.scss */
+
+.container {
+  max-width: 600px; /* Limita el ancho máximo del contenedor */
+  margin: 0 auto;   /* Centra el contenedor horizontalmente */
+  padding: 16px;    /* Añade un poco de espacio interno */
+}
+
+.search-container {
+  margin-top: 20px; /* Espacio entre el título y el buscador */
+}
+
+ion-item {
+  margin-bottom: 16px; /* Espacio entre el campo de búsqueda y el botón */
+  border-radius: 8px;
+}
+
+ion-icon {
+  margin-right: 12px;
+}
+
+ion-button {
+  margin-top: 16px; /* Espacio entre el botón y los resultados */
+}
+
