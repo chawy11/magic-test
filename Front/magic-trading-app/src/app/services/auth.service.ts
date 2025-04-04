@@ -2,13 +2,12 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
-import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private apiUrl =  environment.apiUrl;
+  private apiUrl = 'https://magic-test-two.vercel.app/api';
 
   constructor(private http: HttpClient, private router: Router) {}
 

@@ -1,5 +1,5 @@
 // Front/magic-trading-app/src/app/card-list/card-list.page.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ScryfallService } from '../services/scryfall.service';
 import { UserprofileService } from '../services/userprofile.service';
@@ -37,10 +37,12 @@ import { lastValueFrom } from 'rxjs';
     CommonModule
   ]
 })
-export class CardListPage implements OnInit {
+export class CardListPage implements OnInit, AfterViewInit {
   cartas: any[] = [];
   loading: boolean = true;
   showActions: string | null = null;
+  observer!: IntersectionObserver;
+  
 
   constructor(
     private route: ActivatedRoute,
@@ -58,7 +60,17 @@ export class CardListPage implements OnInit {
       this.scryfallService.buscarCartas(query).subscribe(
         data => {
           this.cartas = data.data || [];
+          // Optimizar las imágenes para la vista de lista
+          this.cartas.forEach(carta => {
+            // Usar versión small para la vista de lista (más ligera)
+            if (carta.image_uris) {
+              carta.displayImage = carta.image_uris.small;
+            }
+          });
           this.loading = false;
+          
+          // Iniciar carga perezosa después de asignar datos
+          setTimeout(() => this.setupLazyLoading(), 100);
         },
         error => {
           this.loading = false;
@@ -68,41 +80,107 @@ export class CardListPage implements OnInit {
     }
   }
 
+  ngAfterViewInit() {
+    // La carga perezosa se configurará después de que los datos estén disponibles
+  }
+
+  // Configurar observador para carga perezosa de imágenes a mejor resolución
+  setupLazyLoading() {
+    // Si existe un observador previo, desconectarlo
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+
+    const options = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    };
+    
+    this.observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const imgElement = entry.target as HTMLImageElement;
+          const fullImage = imgElement.getAttribute('data-full-image');
+          
+          if (fullImage && imgElement.src !== fullImage) {
+            // Cargar la imagen de mayor calidad cuando sea visible
+            const preloadImg = new Image();
+            preloadImg.onload = () => {
+              imgElement.src = fullImage;
+            };
+            preloadImg.src = fullImage;
+            
+            // Dejar de observar después de cargar
+            observer.unobserve(imgElement);
+          }
+        }
+      });
+    }, options);
+    
+    // Observar todas las imágenes
+    const images = document.querySelectorAll('.card-image-container img');
+    images.forEach(img => {
+      this.observer.observe(img);
+    });
+  }
+
   irADetalle(carta: any) {
     this.router.navigate(['/card-details', carta.id]);
   }
 
   async mostrarOpciones(carta: any, event: Event) {
     event.stopPropagation();
-
-    const actionSheet = await this.alertController.create({
-      header: carta.name,
-      buttons: [
-        {
-          text: 'Añadir a Wants',
-          handler: () => {
-            this.addToWants(carta);
-          }
-        },
-        {
-          text: 'Añadir a Sells',
-          handler: () => {
-            this.addToSells(carta);
-          }
-        },
-        {
-          text: 'Cancelar',
-          role: 'cancel'
-        }
-      ]
+    
+    // Mostrar un indicador de carga ligero
+    const loadingIndicator = await this.alertController.create({
+      message: 'Cargando opciones...',
+      backdropDismiss: false
     });
+    await loadingIndicator.present();
+    
+    // Ejecutar en el siguiente ciclo de eventos para evitar bloquear el hilo principal
+    setTimeout(async () => {
+      await loadingIndicator.dismiss();
+      
+      const actionSheet = await this.alertController.create({
+        header: carta.name,
+        buttons: [
+          {
+            text: 'Añadir a Wants',
+            handler: () => {
+              this.addToWants(carta);
+            }
+          },
+          {
+            text: 'Añadir a Sells',
+            handler: () => {
+              this.addToSells(carta);
+            }
+          },
+          {
+            text: 'Cancelar',
+            role: 'cancel'
+          }
+        ]
+      });
 
-    await actionSheet.present();
+      await actionSheet.present();
+    }, 0);
   }
 
   async addToWants(carta: any) {
     try {
+      // Mostrar mensaje de carga para operaciones prolongadas
+      const loading = await this.alertController.create({
+        message: 'Cargando ediciones...',
+        backdropDismiss: false
+      });
+      await loading.present();
+      
       const printData = await lastValueFrom(this.scryfallService.getCardPrints(carta.name));
+      await loading.dismiss();
+      
       if (printData && printData.data) {
         // Sort by release date (oldest first)
         const sortedPrints = printData.data.sort((a: any, b: any) =>
@@ -156,7 +234,16 @@ export class CardListPage implements OnInit {
 
   async addToSells(carta: any) {
     try {
+      // Mostrar mensaje de carga para operaciones prolongadas
+      const loading = await this.alertController.create({
+        message: 'Cargando ediciones...',
+        backdropDismiss: false
+      });
+      await loading.present();
+      
       const printData = await lastValueFrom(this.scryfallService.getCardPrints(carta.name));
+      await loading.dismiss();
+      
       if (printData && printData.data) {
         // Sort by release date (oldest first)
         const sortedPrints = printData.data.sort((a: any, b: any) =>
@@ -216,5 +303,12 @@ export class CardListPage implements OnInit {
     });
 
     await alert.present();
+  }
+  
+  // Limpieza del observador cuando se destruye el componente
+  ngOnDestroy() {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
   }
 }

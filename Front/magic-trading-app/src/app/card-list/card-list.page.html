@@ -24,8 +24,17 @@
                 <ion-icon name="ellipsisVertical"></ion-icon>
               </div>
 
-              <!-- Imagen de la carta -->
-              <img [src]="carta.image_uris?.normal" alt="{{ carta.name }}" />
+              <!-- Imagen de la carta con contenedor para mantener el aspect ratio -->
+              <div class="card-image-container">
+                <img 
+                  [src]="carta.displayImage || carta.image_uris?.small" 
+                  [attr.data-full-image]="carta.image_uris?.normal"
+                  alt="{{ carta.name }}" 
+                  width="146" 
+                  height="204" 
+                  loading="lazy" 
+                />
+              </div>
 
               <!-- Nombre de la carta -->
               <ion-card-header>
