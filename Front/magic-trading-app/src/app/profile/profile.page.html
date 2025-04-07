@@ -1,0 +1,157 @@
+<!-- src/app/profile/profile.page.html -->
+
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button routerLink="/home">
+        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Perfil de {{ currentUser }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Segment para alternar entre wants y sells -->
+  <ion-segment [(ngModel)]="activeSegment" (ionChange)="segmentChanged($event)">
+    <ion-segment-button value="wants">
+      <ion-label>Wants</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="sells">
+      <ion-label>Sells</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <!-- Barra de búsqueda (visible cuando showSearch es true) -->
+  <div *ngIf="showSearch" class="search-container">
+    <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="searchCards()" placeholder="Buscar cartas..."></ion-searchbar>
+    <div *ngIf="searchResults.length > 0" class="search-results">
+      <ion-list>
+        <ion-item *ngFor="let card of searchResults" button (click)="activeSegment === 'wants' ? addCardToWants(card) : addCardToSells(card)">
+          <ion-label>{{ card.name }}</ion-label>
+          <ion-icon slot="end" [name]="activeSegment === 'wants' ? 'add' : 'create'"></ion-icon>
+        </ion-item>
+      </ion-list>
+    </div>
+    <div *ngIf="loading" class="ion-text-center">
+      <p>Cargando resultados...</p>
+    </div>
+  </div>
+
+  <!-- Lista de Wants -->
+  <div *ngIf="activeSegment === 'wants'">
+    <h2>Mi lista de Wants</h2>
+    <ion-list *ngIf="wantsList.length > 0">
+      <ion-item *ngFor="let card of wantsList">
+        <ion-label>
+          <h2>{{ card.cardName }}</h2>
+          <p>Cantidad: {{ card.quantity || 1 }}</p>
+          <p>Edición: {{ card.edition || 'No especificada' }}</p>
+          <p>Idioma: {{ card.language || 'English' }}</p>
+          <p>Foil: {{ card.foil ? 'Sí' : 'No' }}</p>
+          <p>Precio: {{ card.price ? (card.price + ' €') : 'N/A' }}</p>
+        </ion-label>
+        <ion-button fill="clear" (click)="editCard(card, 'wants')">
+          <ion-icon slot="icon-only" name="create"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" color="danger" (click)="removeCardFromWants(card.cardId)">
+          <ion-icon slot="icon-only" name="trash"></ion-icon>
+        </ion-button>
+      </ion-item>
+    </ion-list>
+    <div *ngIf="wantsList.length === 0" class="ion-text-center ion-padding">
+      <p>No tienes cartas en tu lista de Wants</p>
+    </div>
+  </div>
+
+  <!-- Lista de Sells -->
+  <div *ngIf="activeSegment === 'sells'">
+    <h2>Mi lista de Sells</h2>
+    <ion-list *ngIf="sellsList.length > 0">
+      <ion-item *ngFor="let card of sellsList">
+        <ion-label>
+          <h2>{{ card.cardName }}</h2>
+          <p>Cantidad: {{ card.quantity || 1 }}</p>
+          <p>Edición: {{ card.edition || 'First Edition' }}</p>
+          <p>Idioma: {{ card.language || 'English' }}</p>
+          <p>Foil: {{ card.foil ? 'Sí' : 'No' }}</p>
+          <p>Precio: {{ card.price || 0 }}€</p>
+        </ion-label>
+        <ion-button fill="clear" (click)="editCard(card, 'sells')">
+          <ion-icon slot="icon-only" name="create"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" color="danger" (click)="removeCardFromSells(card.cardId)">
+          <ion-icon slot="icon-only" name="trash"></ion-icon>
+        </ion-button>
+      </ion-item>
+    </ion-list>
+    <div *ngIf="sellsList.length === 0" class="ion-text-center ion-padding">
+      <p>No tienes cartas en tu lista de Sells</p>
+    </div>
+  </div>
+
+  <!-- Botón flotante para añadir cartas -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="toggleSearch()">
+      <ion-icon [name]="showSearch ? 'close' : 'add'"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <!-- Modal para editar una carta -->
+  <ion-modal [isOpen]="isModalOpen">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Editar {{ editingCard?.cardName }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeModal()">
+              <ion-icon slot="icon-only" name="close"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding" *ngIf="editingCard">
+        <ion-item>
+          <ion-label position="floating">Cantidad</ion-label>
+          <ion-input type="number" [(ngModel)]="editingCard.quantity" min="1"></ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>Edición</ion-label>
+          <ion-select [(ngModel)]="editingCard.edition" (ionChange)="onEditionChange($event)">
+            <ion-select-option *ngFor="let edition of editions" [value]="edition">{{ edition }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>Idioma</ion-label>
+          <ion-select [(ngModel)]="editingCard.language">
+            <ion-select-option *ngFor="let language of languages" [value]="language">{{ language }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>Foil</ion-label>
+          <ion-toggle [(ngModel)]="editingCard.foil"></ion-toggle>
+        </ion-item>
+
+        <!-- Show price field for both wants and sells -->
+        <ion-item>
+          <ion-label position="floating">Precio (€)</ion-label>
+          <ion-input type="number" [(ngModel)]="editingCard.price" min="0" step="0.01"></ion-input>
+        </ion-item>
+
+        <ion-grid>
+          <ion-row>
+            <ion-col>
+              <ion-button expand="block" (click)="saveCardChanges()">Guardar</ion-button>
+            </ion-col>
+            <ion-col>
+              <ion-button expand="block" color="danger" (click)="closeModal()">Cancelar</ion-button>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>

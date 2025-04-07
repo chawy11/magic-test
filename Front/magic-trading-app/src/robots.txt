@@ -1,0 +1,8 @@
+# www.robotstxt.org
+
+# Permitir a todos los rastreadores
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://magictrade-63ff5.web.app/sitemap.xml

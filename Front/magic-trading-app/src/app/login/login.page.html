@@ -1,0 +1,43 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Iniciar Sesión</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="form-container">
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <!-- Campo Usuario -->
+      <ion-item>
+        <ion-label position="floating">Usuario</ion-label>
+        <ion-input type="text" formControlName="usuario" (blur)="onBlur('usuario')"></ion-input>
+      </ion-item>
+      <ion-note *ngIf="mostrarError('usuario')" color="danger">
+        <span *ngIf="loginForm.get('usuario')?.hasError('required')">El usuario es obligatorio.</span>
+      </ion-note>
+
+      <!-- Campo Contraseña -->
+      <ion-item>
+        <ion-label position="floating">Contraseña</ion-label>
+        <ion-input type="password" formControlName="password" (blur)="onBlur('password')"></ion-input>
+      </ion-item>
+      <ion-note *ngIf="mostrarError('password')" color="danger">
+        <span *ngIf="loginForm.get('password')?.hasError('required')">La contraseña es obligatoria.</span>
+      </ion-note>
+
+      <!-- Mostrar error global de login -->
+      <ion-note *ngIf="mensajeError" color="danger">
+        {{ mensajeError }}
+      </ion-note>
+
+      <!-- Botón de Inicio de Sesión -->
+      <ion-button expand="full" type="submit" class="ion-margin-top">
+        Iniciar Sesión
+      </ion-button>
+    </form>
+
+    <p class="ion-text-center ion-margin-top">
+      ¿No tienes una cuenta? <a routerLink="/registro">Regístrate</a>
+    </p>
+  </div>
+</ion-content>

@@ -1,0 +1,66 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Resultados de búsqueda</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Spinner de carga -->
+  @if (loading) {
+    <div class="loading-spinner">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+  }
+
+  <!-- Lista de cartas -->
+  @if (!loading && cartas.length > 0) {
+    <ion-grid>
+      <ion-row>
+        @for (carta of cartas; track carta.id) {
+          <ion-col size="4" size-md="3" size-lg="2" size-xl="2">
+            <ion-card class="card" (click)="irADetalle(carta)">
+              <!-- Opciones (tres puntos) -->
+              <div class="options-button" (click)="mostrarOpciones(carta, $event)">
+                <ion-icon name="ellipsisVertical"></ion-icon>
+              </div>
+
+              <!-- Dentro del bucle de cartas, actualiza la parte de la imagen: -->
+                  <div class="card-image-container">
+                    <img 
+                      [src]="carta.optimized_image_uris?.small" 
+                      [attr.data-full-image]="carta.optimized_image_uris?.normal"
+                      alt="{{ carta.name }}" 
+                      width="146" 
+                      height="204"
+                      [attr.loading]="carta.isLCP ? null : 'lazy'"
+                      [attr.fetchpriority]="carta.isLCP ? 'high' : 'auto'"
+                    />
+                  </div>
+
+              <!-- Nombre de la carta -->
+              <ion-card-header>
+                <ion-card-title>{{ carta.name }}</ion-card-title>
+              </ion-card-header>
+
+              <!-- Precio de Cardmarket -->
+              <ion-card-content>
+                @if (carta.prices?.eur) {
+                  <p class="price">Precio: {{ carta.prices.eur }} €</p>
+                } @else {
+                  <p class="price">Precio no disponible</p>
+                }
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        }
+      </ion-row>
+    </ion-grid>
+  }
+
+  <!-- Mensaje si no hay resultados -->
+  @if (!loading && cartas.length === 0) {
+    <div class="no-results">
+      <p>No se encontraron cartas.</p>
+    </div>
+  }
+</ion-content>

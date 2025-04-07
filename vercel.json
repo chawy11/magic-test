@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "Back/magic-trading-backend/vercel.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "Back/magic-trading-backend/api/image-proxy.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/image-proxy",
+      "dest": "Back/magic-trading-backend/api/image-proxy.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "Back/magic-trading-backend/vercel.js"
+    }
+  ],
+  "functions": {
+    "Back/magic-trading-backend/api/image-proxy.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

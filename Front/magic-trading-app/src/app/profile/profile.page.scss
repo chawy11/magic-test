@@ -1,0 +1,35 @@
+/* src/app/profile/profile.page.scss */
+
+.search-container {
+  margin: 1rem 0;
+}
+
+.search-results {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  border: 1px solid var(--ion-color-light);
+  border-radius: 8px;
+}
+
+h2 {
+  margin-top: 1rem;
+  color: var(--ion-color-primary);
+  font-weight: bold;
+}
+
+ion-item {
+  --padding-start: 0;
+  margin-bottom: 0.5rem;
+}
+
+ion-fab-button {
+  margin-bottom: 1rem;
+  --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.card-options {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

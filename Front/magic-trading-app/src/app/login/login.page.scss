@@ -1,0 +1,34 @@
+.form-container {
+  max-width: 400px; /* Ancho máximo del formulario */
+  margin: 0 auto;   /* Centra el formulario horizontalmente */
+  padding: 20px;    /* Espaciado interno */
+}
+
+ion-item {
+  margin-bottom: 15px; /* Espacio entre los campos del formulario */
+}
+
+ion-button {
+  margin-top: 20px; /* Espacio arriba del botón */
+}
+
+p {
+  font-size: 14px; /* Tamaño del texto del enlace */
+  color: #666;     /* Color del texto */
+}
+
+a {
+  color: var(--ion-color-primary); /* Color del enlace (puedes cambiarlo) */
+  text-decoration: none; /* Quita el subrayado del enlace */
+}
+
+a:hover {
+  text-decoration: underline; /* Subraya el enlace al pasar el ratón */
+}
+
+ion-note {
+  display: block;
+  margin-top: 5px;
+  font-size: 14px;
+  color: var(--ion-color-danger);
+}

@@ -1,0 +1,31 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ carta?.name }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (carta) {
+    <div class="card-container">
+      <!-- Opciones (tres puntos) -->
+      <div class="options-button" (click)="mostrarOpciones($event)">
+        <ion-icon name="ellipsisVertical"></ion-icon>
+      </div>
+
+      <img [src]="carta.image_uris?.normal" alt="{{ carta.name }}">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>{{ carta.name }}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>{{ carta.oracle_text }}</p>
+          @if (carta.prices?.eur) {
+            <p class="price">Precio: {{ carta.prices.eur }} €</p>
+          } @else {
+            <p class="price">Precio no disponible</p>
+          }
+        </ion-card-content>
+      </ion-card>
+    </div>
+  }
+</ion-content>
